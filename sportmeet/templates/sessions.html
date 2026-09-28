@@ -1,0 +1,27 @@
+{% extends 'base.html' %}{% block title %}Встречи с записью · СпортРядом{% endblock %}
+{% block content %}
+<div class="page-head"><div class="eyebrow">ВСТРЕЧИ В МОСКВЕ</div><h1>Встречи, куда можно записаться</h1>
+<p>Публичные мероприятия с возможностью отправить заявку. После решения организатора статус появится в «Моих заявках».</p></div>
+<form class="filters" method="get"><label>Что ищем?<input name="q" value="{{ q }}" placeholder="Встреча, место или организация"></label>
+  <label>Вид спорта<select name="sport_id"><option value="">Все виды</option>{% for sport in sports %}<option value="{{ sport['id'] }}" {% if sport_id==sport['id'] %}selected{% endif %}>{{ sport['name'] }}</option>{% endfor %}</select></label>
+  <label>Район<select name="area"><option value="">Все районы</option>{% for row in areas %}<option value="{{ row['name'] }}" {% if area==row['name'] %}selected{% endif %}>{{ row['name'] }}</option>{% endfor %}</select></label>
+  <label>С даты<input type="date" name="date_from" value="{{ date_from }}"></label><label>По дату<input type="date" name="date_to" value="{{ date_to }}"></label>
+  <label>Не раньше<input type="time" name="time_from" value="{{ time_from }}"></label><label>Не позже<input type="time" name="time_to" value="{{ time_to }}"></label>
+  <label class="checkline"><input type="checkbox" name="available" value="1" {% if available %}checked{% endif %}> Есть места</label>
+  <label>Представление<select name="view"><option value="list" {% if view!='map' %}selected{% endif %}>Список</option><option value="map" {% if view=='map' %}selected{% endif %}>Карта встреч</option></select></label>
+  <button class="button">Показать</button></form>
+<div class="results-head"><p>Найдено встреч: <strong>{{ found }}</strong></p><a class="text-link" href="{{ url_for('sessions') }}">Сбросить фильтры</a></div>
+{% if view=='map' %}<div id="events-map" class="events-map" role="region" aria-label="Карта мероприятий"></div>
+<p class="hint">На карте показаны первые 300 встреч по времени. Если карта не загрузилась, откройте встречи в списке ниже.</p>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzxGN1uSUd1/XC2Wf/B5P9kR0=" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>document.addEventListener('DOMContentLoaded',function(){if(!window.L)return;const pins={{ pins|tojson }};const map=L.map('events-map').setView([55.75,37.62],10);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap contributors'}).addTo(map);const bounds=[];for(const p of pins){const node=document.createElement('div');const a=document.createElement('a');a.href=p.url;a.textContent=p.title+' · '+p.date.replace('T',' ');node.appendChild(a);L.marker([p.lat,p.lon]).addTo(map).bindPopup(node);bounds.push([p.lat,p.lon]);}if(bounds.length)map.fitBounds(bounds,{padding:[24,24],maxZoom:13});});</script>{% endif %}
+<div class="grid">{% for item in items %}<a class="card" href="{{ url_for('session_detail',session_id=item['id']) }}"><span class="tag">{{ item['sport'] }} · {{ item['area'] }}</span>
+<h3>{{ item['title'] }}</h3><p>{{ item['venue_name'] }} · {{ item['address'] }}{% if item['organization_name'] %}<br>Проводит: {{ item['organization_name'] }}{% endif %}</p>
+<div class="card-bottom"><strong>{{ item['starts_at']|replace('T',' · ') }}</strong><span>{{ 'Очередь ожидания →' if item['enrolled']>=item['capacity'] else 'Подать заявку →' }}</span></div></a>
+{% else %}<div class="empty"><strong>По этим условиям встреч пока нет.</strong><p>Попробуйте другой район или направление. Предложение занятия — это идея для организатора, а не заявка на участие.</p>
+{% if me and me['role']=='organizer' %}<a class="text-link" href="{{ url_for('organizer_requests') if organizer_verified else url_for('organizer_organizations') }}">Посмотреть предложения →</a>
+{% elif me and me['role'] in ('event_admin','global_admin') %}<a class="text-link" href="{{ url_for('admin') }}">Проверить мероприятия →</a>
+{% elif not me or me['role']=='participant' %}<a class="text-link" href="{{ url_for('new_activity_request') if me else url_for('signup',next=url_for('new_activity_request')) }}">Предложить занятие →</a>{% endif %}</div>{% endfor %}</div>
+{% if view!='map' %}<div class="pages">{% if page>1 %}<a class="button secondary" href="{{ url_for('sessions',page=page-1,q=q,area=area,sport_id=sport_id,available='1' if available else '',date_from=date_from,date_to=date_to,time_from=time_from,time_to=time_to) }}">← Назад</a>{% endif %}<span>Страница {{ page }}</span>{% if page*24<found %}<a class="button secondary" href="{{ url_for('sessions',page=page+1,q=q,area=area,sport_id=sport_id,available='1' if available else '',date_from=date_from,date_to=date_to,time_from=time_from,time_to=time_to) }}">Дальше →</a>{% endif %}</div>{% endif %}
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-head"><div class="eyebrow">{{ item['sport'] }} ·
+  {{ {'published':'Опубликована','pending':'На проверке у администратора тренировок','rejected':'Публикация отклонена','cancelled':'Отменена'}[item['status']] }}</div>
+  <h1>{{ item['title'] }}</h1><p>{{ item['starts_at']|replace('T',' · ') }} · {{ item['duration_minutes'] }} минут</p></div>
+<div class="columns"><section class="panel"><h2>Детали встречи</h2><p>{{ item['description'] or 'Описание не добавлено.' }}</p>
+  <dl class="facts"><dt>Место</dt><dd>{% if item['venue_status']=='visible' %}<a class="text-link" href="{{ url_for('venue_detail',venue_id=item['venue_id']) }}">{{ item['venue_name'] }}</a>{% else %}{{ item['venue_name'] }} (карточка временно скрыта){% endif %}<br>{{ item['address'] }}</dd>
+  <dt>Организатор</dt><dd>{{ item['organizer'] }}{% if item['organization_name'] %} · <a class="text-link" href="{{ url_for('organization_profile',organization_id=item['organization_id']) }}">{{ item['organization_name'] }}</a>{% endif %}</dd><dt>Подтверждено участников</dt><dd>{{ item['enrolled'] }} из {{ item['capacity'] }}</dd>{% if item['series_id'] %}<dt>Серия</dt><dd>Еженедельное занятие №{{ item['series_id'] }}</dd>{% endif %}</dl>
+  {% if item['venue_status']!='visible' %}<p class="status-note">Площадка временно скрыта. Новые заявки и подтверждения недоступны.</p>
+  {% elif item['status']=='published' and item['starts_at']>now.strftime('%Y-%m-%dT%H:%M') %}
+    {% if me and me['role']=='participant' %}
+      {% if enrolled and enrolled['status']=='pending' %}
+        <p class="status-note">Ваша заявка отправлена организатору и ожидает решения. <a class="text-link" href="{{ url_for('my_sessions') }}">Мои заявки</a></p>
+        <form method="post" action="{{ url_for('leave_session',session_id=item['id']) }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="button secondary">Отозвать заявку</button></form>
+      {% elif enrolled and enrolled['status'] in ('waitlisted','waitlist_approved') %}
+        <p class="status-note">{{ 'Организатор одобрил заявку: вы в очереди за освободившимся местом.' if enrolled['status']=='waitlist_approved' else 'Вы в списке ожидания решения организатора.' }}</p>
+        <form method="post" action="{{ url_for('leave_session',session_id=item['id']) }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="button secondary">Покинуть очередь</button></form>
+      {% elif enrolled and enrolled['status']=='active' %}
+        <p class="status-note">Организатор подтвердил вашу запись. Тренировка видна в разделе «Мои заявки».</p>
+        <form method="post" action="{{ url_for('leave_session',session_id=item['id']) }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="button secondary">Отменить участие</button></form>
+      {% else %}
+        {% if enrolled and enrolled['status']=='rejected' %}<p class="status-note">Предыдущая заявка отклонена. Вы можете отправить её ещё раз.</p>{% endif %}
+        <form method="post" action="{{ url_for('join_session',session_id=item['id']) }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="button">Подать заявку на участие</button></form>
+        <p class="hint">{{ 'Свободных мест нет: заявка попадёт в очередь, организатор рассмотрит её.' if item['enrolled']>=item['capacity'] else 'Место закрепляется после подтверждения организатором.' }}</p>{% endif %}
+    {% elif not me %}<a class="button" href="{{ url_for('login',next=url_for('session_detail',session_id=item['id'])) }}">Войти, чтобы подать заявку</a>
+    {% elif me and me['role']=='organizer' and item['organizer_id']==me['id'] %}{% if organizer_verified %}<a class="button" href="{{ url_for('participants',session_id=item['id']) }}">Посмотреть заявки участников</a>{% else %}<a class="button secondary" href="{{ url_for('organizer_organizations') }}">Подтвердить организацию для работы с заявками</a>{% endif %}{% endif %}
+  {% elif item['status']!='published' %}<p class="status-note">На эту встречу сейчас нельзя подать заявку: {{ {'pending':'ожидается публикация','rejected':'публикация отклонена','cancelled':'встреча отменена'}[item['status']] }}.</p>
+  {% else %}<p class="status-note">Приём заявок на встречу завершён.</p>{% endif %}
+</section>
+<aside class="panel aside"><h2>Отзывы</h2>{% for review in reviews %}<div class="review"><strong>{{ review['display_name'] }} · {{ review['rating'] }}/5</strong><p>{{ review['body'] }}</p></div>{% else %}<p>Отзывов пока нет.</p>{% endfor %}
+{% if me and me['role']=='participant' and enrolled and enrolled['review_status'] %}<p class="status-note">{{ {'pending':'Ваш отзыв отправлен на проверку.','approved':'Ваш отзыв опубликован.','rejected':'Ваш отзыв отклонён после проверки.'}[enrolled['review_status']] }}</p>{% endif %}
+{% if me and me['role']=='participant' and enrolled and not enrolled['review_status'] and enrolled['status']=='active' and enrolled['attended'] and item['status']=='published' and item['starts_at']<now.strftime('%Y-%m-%dT%H:%M') %}
+<form method="post" action="{{ url_for('add_review',session_id=item['id']) }}"><input type="hidden" name="csrf" value="{{ csrf }}"><label>Оценка<select name="rating">{% for n in range(1,6) %}<option value="{{ n }}">{{ n }}</option>{% endfor %}</select></label><label>Отзыв<textarea name="body" minlength="5" maxlength="1000" required></textarea></label><button class="button secondary">Отправить отзыв</button></form>{% endif %}
+</aside></div>{% endblock %}

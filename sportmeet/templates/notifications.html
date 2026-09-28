@@ -1,0 +1,6 @@
+{% extends 'base.html' %}{% block title %}Уведомления · СпортРядом{% endblock %}
+{% block content %}<div class="page-head"><div class="eyebrow">ЛИЧНЫЙ КАБИНЕТ</div><h1>Уведомления</h1><p>Решения по заявкам и изменения встреч.</p></div>
+<div class="stack">{% for item in items %}<div class="panel line"><div><strong>{{ item['message'] }}</strong><p>{{ item['created_at'] }} · {{ 'Прочитано' if item['read_at'] else 'Новое' }}</p>
+{% if item['session_id'] %}<a class="text-link" href="{{ url_for('session_detail',session_id=item['session_id']) }}">Открыть встречу</a>{% endif %}</div>
+{% if not item['read_at'] %}<form method="post" action="{{ url_for('read_notification',notification_id=item['id']) }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="button secondary">Прочитано</button></form>{% endif %}</div>
+{% else %}<div class="empty">Уведомлений пока нет.</div>{% endfor %}</div>{% endblock %}

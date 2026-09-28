@@ -1,0 +1,6 @@
+Flask>=3.1,<4
+pytest>=8,<10
+# Python's zoneinfo needs IANA time-zone data on Windows (Europe/Moscow).
+tzdata>=2025.1
+# Only scripts/prepare_seed.py needs pymongo to decode the archived BSON source.
+pymongo>=4.10,<5

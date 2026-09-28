@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}СпортРядом{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static',filename='style.css') }}">
+</head>
+<body>
+<header class="top">
+  <div class="wrap site-header">
+    <a class="brand" href="{{ url_for('home') }}" aria-label="СпортРядом — главная"><span class="brandmark" aria-hidden="true">✦</span> СпортРядом</a>
+    <nav class="main-nav" aria-label="Основные разделы">
+      <a href="{{ url_for('sessions') }}" {% if request.endpoint in ('sessions','session_detail') %}aria-current="page"{% endif %}>Встречи</a>
+      <a href="{{ url_for('venues') }}" {% if request.endpoint in ('venues','venue_detail') %}aria-current="page"{% endif %}>Площадки</a>
+      <a href="{{ url_for('roles') }}" {% if request.endpoint=='roles' %}aria-current="page"{% endif %}>Возможности</a>
+    </nav>
+    <div class="header-actions">
+      {% if me %}
+        {% if me['role'] in ('participant','organizer') %}<a class="header-shortcut" href="{{ url_for('my_sessions') }}">{{ 'Мои заявки' if me['role']=='participant' else 'Мои мероприятия' }}{% if me['role']=='organizer' and requests_count %}<span class="header-count">Заявки: {{ requests_count }}</span>{% endif %}</a>
+        {% else %}<a class="header-shortcut" href="{{ url_for('admin') }}">Управление</a>{% endif %}
+      {% else %}<a class="header-shortcut" href="{{ url_for('login') }}">Войти</a>{% endif %}
+      <details class="nav-drawer">
+        <summary class="menu-trigger"><span aria-hidden="true">☰</span> <span>Меню</span>{% if unread_count %}<span class="menu-count" aria-label="Новые уведомления: {{ unread_count }}">{{ unread_count }}</span>{% endif %}</summary>
+        <nav class="menu-panel" aria-label="Все разделы">
+          <div class="drawer-catalog"><span class="menu-label">Исследовать</span>
+            <a href="{{ url_for('sessions') }}">Встречи с записью</a><a href="{{ url_for('venues') }}">Площадки</a><a href="{{ url_for('roles') }}">Возможности ролей</a>
+          </div>
+          {% if me %}
+            <span class="menu-label">{{ me['display_name'] }} · {{ role_labels[me['role']] }}</span>
+            {% if me['role']=='participant' %}<a href="{{ url_for('my_sessions') }}">Мои заявки и сообщения</a><a href="{{ url_for('new_activity_request') }}">Предложить занятие</a>{% endif %}
+            {% if me['role']=='organizer' %}<a href="{{ url_for('my_sessions') }}">Мои мероприятия{% if requests_count %} · заявок: {{ requests_count }}{% endif %}</a><a href="{{ url_for('organizer_organizations') }}">Мои организации{% if not organizer_verified %} · на проверке{% endif %}</a>
+              {% if organizer_verified %}<a href="{{ url_for('organizer_requests') }}">Идеи жителей</a><a href="{{ url_for('create_session') }}">Создать встречу</a>{% endif %}{% endif %}
+            {% if me['role'] in ('venue_admin','event_admin','global_admin') %}<a href="{{ url_for('admin') }}">Панель управления</a>{% endif %}
+            <a href="{{ url_for('notifications') }}">Уведомления{% if unread_count %} · новые: {{ unread_count }}{% endif %}</a>
+            <a href="{{ url_for('account') }}">Моя учётная запись</a>
+            <form method="post" action="{{ url_for('logout') }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="menu-logout">Выйти из аккаунта</button></form>
+          {% else %}
+            <span class="menu-label">Участие</span><a href="{{ url_for('login') }}">Войти</a><a href="{{ url_for('signup') }}">Создать аккаунт</a>
+          {% endif %}
+        </nav>
+      </details>
+    </div>
+  </div>
+</header>
+<main class="wrap" id="content">
+  {% with notices=get_flashed_messages(with_categories=true) %}{% for category,message in notices %}<div class="notice {{ category }}" role="status">{{ message }}</div>{% endfor %}{% endwith %}
+  {% block content %}{% endblock %}
+</main>
+<footer class="wrap foot"><strong>СпортРядом</strong><p>Встречи с записью и справочник площадок Москвы. Данные площадок взяты из <a href="https://data.mos.ru/opendata/893">архива 2021 года</a>; сведения нужно уточнять. Начальные встречи предназначены для проверки приложения и не подтверждают фактическое проведение. Заявка не бронирует городскую площадку.</p></footer>
+</body></html>

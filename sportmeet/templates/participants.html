@@ -1,0 +1,13 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-head"><div class="eyebrow">ОРГАНИЗАЦИЯ ТРЕНИРОВКИ</div><h1>Заявки и участники</h1>
+<p><a class="text-link" href="{{ url_for('session_detail',session_id=item['id']) }}">{{ item['title'] }}</a> · {{ item['starts_at']|replace('T',' · ') }}</p>
+{% if item['status']=='pending' %}<p>Администратор мероприятий ещё не опубликовал мероприятие. Участники смогут подать заявки после публикации.</p>{% endif %}</div>
+<div class="stack">{% for person in participants %}<div class="panel line"><div><strong>{{ person['display_name'] }}</strong>
+<p>{{ {'pending':'Ожидает вашего решения','waitlisted':'Ожидает вашего решения в очереди','waitlist_approved':'Место в очереди одобрено','active':'Участие подтверждено','rejected':'Заявка отклонена','cancelled':'Заявка отменена'}[person['status']] }}{% if person['attended'] %} · Присутствовал{% endif %}</p></div>
+{% if person['status'] in ('pending','waitlisted') and item['status']=='published' and item['starts_at']>now.strftime('%Y-%m-%dT%H:%M') %}
+<div class="actions"><form method="post" action="{{ url_for('decide_participant',session_id=item['id'],registration_id=person['id'],decision='active') }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="button">Подтвердить</button></form>
+<form method="post" action="{{ url_for('decide_participant',session_id=item['id'],registration_id=person['id'],decision='rejected') }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="button danger">Отклонить</button></form></div>
+{% elif person['status']=='active' and item['status']=='published' and item['starts_at']>now.strftime('%Y-%m-%dT%H:%M') %}<form method="post" action="{{ url_for('remove_participant',session_id=item['id'],registration_id=person['id']) }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="button danger">Отменить запись</button></form>
+{% elif person['status']=='active' and item['status']=='published' and item['starts_at']<=now.strftime('%Y-%m-%dT%H:%M') %}<form method="post" action="{{ url_for('mark_attendance',session_id=item['id'],user_id=person['user_id'],decision='absent' if person['attended'] else 'present') }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="button secondary">{{ 'Убрать отметку' if person['attended'] else 'Отметить присутствие' }}</button></form>{% endif %}</div>
+{% else %}<div class="empty">Заявок пока нет. {% if item['status']=='published' %}Опубликованная встреча уже видна участникам в разделе «Встречи с записью».{% endif %}</div>{% endfor %}</div>
+{% endblock %}

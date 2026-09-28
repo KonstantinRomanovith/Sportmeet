@@ -1,0 +1,12 @@
+{% extends 'base.html' %}{% block title %}Моя учётная запись · СпортРядом{% endblock %}
+{% block content %}<div class="page-head"><div class="eyebrow">ЛИЧНЫЙ КАБИНЕТ</div><h1>{{ me['display_name'] }}</h1>
+<p>{{ role_labels[me['role']] }} · {{ me['email'] }}</p></div>
+<div class="columns"><section class="panel"><h2>Доступные действия</h2><ul>{% for feature in allowed %}<li>{{ feature }}</li>{% endfor %}</ul>
+{% if me['role']=='organizer' %}<p>Подтверждённые организации: {% if organizations %}{% for org in organizations %}<a class="text-link" href="{{ url_for('organization_profile',organization_id=org['id']) }}">{{ org['name'] }}</a>{% if not loop.last %}, {% endif %}{% endfor %}{% else %}пока нет; <a class="text-link" href="{{ url_for('organizer_organizations') }}">отправьте заявку</a>{% endif %}.</p>{% endif %}
+<a class="text-link" href="{{ url_for('roles') }}">Все роли и полномочия →</a></section>
+<section class="panel"><h2>Изменить пароль</h2><p class="hint">Пароли хранятся как индивидуальные хеши scrypt. После смены пароля другие открытые сеансы этой учётной записи завершатся.</p>
+<form method="post" action="{{ url_for('change_password') }}"><input type="hidden" name="csrf" value="{{ csrf }}">
+<label>Текущий пароль<input type="password" name="current_password" autocomplete="current-password" required></label>
+<label>Новый пароль<input type="password" name="new_password" minlength="10" maxlength="200" autocomplete="new-password" required></label>
+<label>Повторите новый пароль<input type="password" name="confirm_password" minlength="10" maxlength="200" autocomplete="new-password" required></label>
+<button class="button">Сохранить новый пароль</button></form></section></div>{% endblock %}

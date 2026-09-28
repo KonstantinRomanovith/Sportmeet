@@ -1,0 +1,7 @@
+{% extends 'base.html' %}{% block title %}Исправление площадки · СпортРядом{% endblock %}
+{% block content %}<div class="page-head"><div class="eyebrow">АДМИНИСТРАТОР ПЛОЩАДОК</div><h1>Проверка карточки №{{ venue['id'] }}</h1><p>Исходный каталог взят из архива 2021 года. Внесите только проверенные вами исправления.</p></div>
+<form class="form-card wide" method="post"><input type="hidden" name="csrf" value="{{ csrf }}">
+{% for field,label in [('name','Название'),('facility_name','Объект'),('address','Адрес'),('usage_period','Период использования'),('paid','Стоимость'),('paid_comment','Пояснение к стоимости'),('website','Адрес сайта'),('phone','Справочный телефон'),('accessibility','Доступность')] %}
+<label>{{ label }}<input name="{{ field }}" value="{{ venue[field] or '' }}" maxlength="{{ fields[field] }}" {% if field in ('name','facility_name','address','usage_period','paid') %}required{% endif %}></label>{% endfor %}
+<button class="button">Сохранить исправления</button></form>
+<section class="section"><h2>История исправлений</h2><div class="stack">{% for item in edits %}<div class="panel"><strong>{{ item['field_name'] }} · {{ item['display_name'] }} · {{ item['created_at'] }}</strong><p>{{ item['old_value'] or 'Не указано' }} → {{ item['new_value'] or 'Не указано' }}</p></div>{% else %}<div class="empty">Исправлений ещё не было.</div>{% endfor %}</div></section>{% endblock %}

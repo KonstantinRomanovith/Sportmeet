@@ -1,0 +1,7 @@
+{% extends 'base.html' %}{% block title %}Роли и возможности · СпортРядом{% endblock %}
+{% block content %}<div class="page-head"><div class="eyebrow">ПРАВА ДОСТУПА</div><h1>Кто что может делать</h1>
+<p>Права проверяются сервером при каждом действии. Организатор получает рабочий доступ после подтверждения связи с организацией; он управляет только собственными мероприятиями.</p></div>
+<section class="panel"><h2>Гость</h2><ul>{% for feature in guest_features %}<li>{{ feature }}</li>{% endfor %}</ul></section>
+<div class="grid">{% for title,features in roles %}<section class="panel"><h2>{{ title }}</h2><ul>{% for feature in features %}<li>{{ feature }}</li>{% endfor %}</ul></section>{% endfor %}</div>
+<p class="hint">Администратор площадок работает с карточками объектов. Администратор мероприятий проверяет организации, встречи и участие. Глобальный администратор совмещает оба направления и назначает роли.</p>
+{% endblock %}

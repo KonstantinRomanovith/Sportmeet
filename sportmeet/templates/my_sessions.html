@@ -1,0 +1,31 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-head"><div class="eyebrow">ЛИЧНЫЙ КАБИНЕТ</div>
+<h1>{{ 'Мои заявки и встречи' if me['role']=='participant' else 'Мои мероприятия' }}</h1>
+<p>{% if me['role']=='organizer' %}Созданные встречи сначала проверяет администратор мероприятий. После публикации заявки участников появятся здесь и в списке заявок мероприятия.{% else %}Здесь видно каждую поданную заявку: ожидание ответа, подтверждение, отказ или отмену.{% endif %}</p></div>
+{% if me['role']=='organizer' and not organizer_verified %}<div class="status-note"><strong>Связь с организацией ещё не подтверждена.</strong> Ваши прежние мероприятия сохранены. Чтобы проводить новые встречи и отвечать участникам, <a class="text-link" href="{{ url_for('organizer_organizations') }}">отправьте запрос организации и дождитесь решения администратора</a>.</div>{% endif %}
+{% if items %}<p class="hint">Сначала показаны актуальные встречи и заявки, затем прошедшие и отменённые.</p>{% endif %}
+<div class="stack">{% for item in items %}<div class="panel line"><div>
+  <a class="text-link" href="{{ url_for('session_detail',session_id=item['id']) }}"><strong>{{ item['title'] }}</strong></a>
+  <p>{{ item['venue_name'] }} · {{ item['starts_at']|replace('T',' · ') }}</p>
+  {% if me['role']=='organizer' %}<span class="tag">{{ {'pending':'На проверке у администратора','published':'Опубликована','rejected':'Отклонена администратором','cancelled':'Отменена'}[item['status']] }}</span>{% if item['series_id'] %}<span class="tag">Серия №{{ item['series_id'] }}</span>{% endif %}
+  {% else %}<span class="tag">{{ {'pending':'Ожидает ответа организатора','waitlisted':'В очереди: ожидает решения','waitlist_approved':'В очереди: одобрена организатором','active':'Подтверждена организатором','rejected':'Отклонена организатором','cancelled':'Отменена'}[item['registration_status']] }}</span>
+  {% if item['status']!='published' %}<p>Мероприятие: {{ {'pending':'ожидает публикации','rejected':'публикация отклонена','cancelled':'отменено'}[item['status']] }}.</p>{% endif %}{% endif %}
+</div>
+{% if me['role']=='organizer' and organizer_verified %}<div class="actions">
+<a class="button secondary" href="{{ url_for('participants',session_id=item['id']) }}">Заявки: {{ item['requests'] }} · Участники: {{ item['enrolled'] }}</a>
+{% if item['status'] in ('pending','published') and item['starts_at']>now.strftime('%Y-%m-%dT%H:%M') %}
+<form method="post" action="{{ url_for('reschedule_session',session_id=item['id']) }}"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="datetime-local" name="starts_at" aria-label="Новое время встречи" required><button class="button secondary">Перенести</button></form>
+<form method="post" action="{{ url_for('cancel_session',session_id=item['id']) }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="button danger">Отменить</button></form>{% endif %}</div>
+{% if item['series_id'] %}<form method="post" action="{{ url_for('cancel_series',series_id=item['series_id']) }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="button danger">Отменить будущие занятия серии</button></form>{% endif %}
+{% elif me['role']=='participant' and item['registration_status'] in ('pending','waitlisted','waitlist_approved','active') and item['status'] in ('pending','published') and item['starts_at']>now.strftime('%Y-%m-%dT%H:%M') %}<form method="post" action="{{ url_for('leave_session',session_id=item['id']) }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="button secondary">{{ 'Отменить участие' if item['registration_status']=='active' else 'Отозвать заявку' }}</button></form>{% endif %}
+</div>{% else %}<div class="empty">{% if me['role']=='participant' %}Вы ещё не подавали заявки. <a class="text-link" href="{{ url_for('sessions') }}">Найти опубликованную встречу</a> или <a class="text-link" href="{{ url_for('new_activity_request') }}">предложить занятие</a>.{% elif organizer_verified %}Мероприятий пока нет. <a class="text-link" href="{{ url_for('create_session') }}">Создать встречу</a>.{% else %}После подтверждения организации здесь появится возможность создать мероприятие.{% endif %}</div>{% endfor %}</div>
+{% if me['role']=='participant' %}<section class="section compact"><div class="section-head"><div><h2>Мои предложения организаторам</h2><p>Это идеи встреч, а не записи. После публикации подходящей встречи отправьте отдельную заявку на участие.</p></div><a class="button secondary" href="{{ url_for('new_activity_request') }}">Предложить занятие →</a></div>
+<div class="stack">{% for proposal in proposals %}<div class="panel line"><div><strong>{{ proposal['sport'] }} · {{ proposal['area'] }}</strong><p>{{ proposal['note'] or 'Без дополнительных пожеланий' }}</p>
+<span class="tag">{{ {'open':'Ждёт организатора','fulfilled':'Встреча была опубликована','cancelled':'Отозвано'}[proposal['status']] }}</span></div>
+{% if proposal['meeting_id'] and proposal['status']=='fulfilled' %}<a class="button" href="{{ url_for('session_detail',session_id=proposal['meeting_id']) }}">Посмотреть встречу →</a>
+{% elif proposal['status']=='open' %}<form method="post" action="{{ url_for('cancel_activity_request',request_id=proposal['id']) }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="button secondary">Отозвать</button></form>{% endif %}</div>{% else %}<div class="empty">Пока нет предложений.</div>{% endfor %}</div></section>{% endif %}
+{% if reports %}<section class="section compact" id="venue-reports"><h2>Мои сообщения о площадках</h2><p>Сообщение о неточности попадает администратору площадок. Оно не является заявкой на тренировку.</p>
+<div class="stack">{% for report in reports %}<div class="panel line"><div><strong>{{ report['venue_name'] }}</strong><p>{{ report['body'] }}</p>
+<span class="tag">{{ {'open':'Ожидает проверки','escalated':'Передано на дополнительную проверку','resolved':'Рассмотрено'}[report['status']] }}</span></div>
+{% if report['public_status']=='visible' %}<a class="button secondary" href="{{ url_for('venue_detail',venue_id=report['venue_id']) }}">Открыть площадку</a>{% else %}<span class="hint">Карточка временно скрыта</span>{% endif %}</div>{% endfor %}</div></section>{% endif %}
+{% endblock %}

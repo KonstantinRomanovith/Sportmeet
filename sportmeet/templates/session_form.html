@@ -1,0 +1,27 @@
+{% extends 'base.html' %}{% block title %}Создать встречу · СпортРядом{% endblock %}
+{% block content %}
+<div class="page-head"><div class="eyebrow">ОРГАНИЗАТОР</div><h1>Создать встречу</h1>
+<p>Найдите площадку по названию или адресу, затем укажите параметры занятия. Администратор мероприятий проверит его перед публикацией.</p></div>
+{% if demand %}<div class="status-note">Вы отвечаете на предложение жителя: <strong>{{ demand['sport_name'] }} · {{ demand['area_name'] }}</strong>. Встреча должна проходить на площадке этого района и соответствовать виду спорта.</div>{% endif %}
+<form class="filters" method="get" action="{{ url_for('create_session') }}">{% if request_id %}<input type="hidden" name="request_id" value="{{ request_id }}">{% endif %}<label>Название площадки или адрес
+<input name="q" value="{{ q }}" placeholder="Название или улица" {% if not demand %}required{% endif %}></label><button class="button">Найти площадку</button></form>
+{% if selected and choices %}
+<div class="form-card wide"><p>Выбрана площадка: <strong>{{ choices[0]['name'] }}</strong> · {{ choices[0]['address'] }}.
+<a class="text-link" href="{{ url_for('create_session',request_id=request_id) }}">Выбрать другую</a></p>
+<form method="post" action="{{ url_for('create_session',venue_id=selected,request_id=request_id) }}"><input type="hidden" name="csrf" value="{{ csrf }}">
+<label>От имени организации<select name="organization_id" required>{% for org in organizations %}<option value="{{ org['id'] }}" {% if request.form.get('organization_id')==org['id']|string %}selected{% endif %}>{{ org['name'] }}</option>{% endfor %}</select></label>
+<label>Направление<select name="venue_sport" required>{% for item in choices %}<option value="{{ item['id'] }}:{{ item['sport_id'] }}" {% if request.form.get('venue_sport')==item['id'] ~ ':' ~ item['sport_id'] %}selected{% endif %}>{{ item['sport'] }}</option>{% endfor %}</select></label>
+<label>Название встречи<input name="title" maxlength="100" value="{{ request.form.get('title','') }}" required></label>
+<label>О занятии<textarea name="description" maxlength="1000">{{ request.form.get('description','') }}</textarea></label>
+<div class="pair"><label>Начало, время Москвы<input type="datetime-local" name="starts_at" value="{{ request.form.get('starts_at','') }}" required></label><label>Продолжительность, мин<input type="number" name="duration" value="{{ request.form.get('duration','60') }}" min="30" max="240" required></label></div>
+<label>Число участников<input type="number" name="capacity" value="{{ request.form.get('capacity','12') }}" min="2" max="100" required></label>
+<label>Сколько еженедельных занятий провести (1 — разовая встреча)<input type="number" name="occurrences" value="{{ request.form.get('occurrences','1') }}" min="1" max="12" required></label>
+<p class="hint">Каждая дата серии проходит проверку администратора. Время указано по Москве.</p>
+<button class="button">Отправить на проверку</button></form></div>
+{% elif q or demand %}
+<div class="stack">{% for item in results %}<a class="panel line" href="{{ url_for('create_session',venue_id=item['id'],request_id=request_id) }}"><span><strong>{{ item['name'] }}</strong><br>{{ item['address'] }}</span><span class="tag">Выбрать →</span></a>
+{% else %}<div class="empty">Совпадений нет. Попробуйте другое название или адрес.</div>{% endfor %}</div>
+{% if results|length==30 %}<p class="hint">Показаны первые 30 результатов. Уточните запрос, чтобы найти нужную площадку.</p>{% endif %}
+{% elif selected %}<div class="empty">Эта площадка недоступна. Выберите другую в поиске.</div>
+{% else %}<div class="empty">Введите название или адрес площадки. Можно также найти её в <a class="text-link" href="{{ url_for('venues') }}">каталоге</a> и перейти к созданию тренировки из карточки.</div>{% endif %}
+{% endblock %}

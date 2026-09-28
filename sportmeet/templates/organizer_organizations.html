@@ -1,0 +1,16 @@
+{% extends 'base.html' %}{% block title %}Мои организации · СпортРядом{% endblock %}
+{% block content %}
+<div class="page-head"><div class="eyebrow">ОРГАНИЗАТОР</div><h1>Ваши организации</h1>
+<p>Чтобы публиковать встречи и отвечать участникам, получите подтверждение связи хотя бы с одной организацией. Решение появится здесь.</p></div>
+{% if organizer_verified %}<div class="status-note">Связь подтверждена. <a class="text-link" href="{{ url_for('create_session') }}">Создать встречу →</a></div>
+{% else %}<div class="status-note">Доступ организатора ожидает проверки администратором мероприятий. Можно искать встречи и просматривать площадки.</div>{% endif %}
+<section class="section compact"><h2>Мои заявки на подтверждение</h2><div class="stack">
+{% for item in memberships %}<div class="panel line"><div><strong>{{ item['name'] }}</strong><p>Организация: {{ {'pending':'ожидает проверки','active':'в справочнике','rejected':'отклонена'}[item['organization_status']] }}</p></div>
+<span class="tag">{{ {'pending':'Связь на проверке','approved':'Связь подтверждена','rejected':'Связь отклонена'}[item['status']] }}</span></div>
+{% else %}<div class="empty">Вы ещё не запросили подтверждение организации.</div>{% endfor %}</div></section>
+<section class="section compact"><div class="form-card wide inline-form"><h2>Добавить организацию</h2><p>Выберите из списка или укажите новую. Администратор рассмотрит запрос, после чего можно будет действовать от её имени.</p>
+<form method="post"><input type="hidden" name="csrf" value="{{ csrf }}">
+{% if organizations %}<fieldset class="org-choices"><legend>Выберите до трёх организаций</legend>{% for org in organizations %}<label class="org-option"><input type="checkbox" name="organization_ids" value="{{ org['id'] }}">{{ org['name'] }}</label>{% endfor %}</fieldset>{% endif %}
+<label>Новая организация, если её нет в списке<input name="new_organization" minlength="3" maxlength="120" placeholder="Название для рассмотрения"></label>
+<button class="button">Отправить запрос</button></form></div></section>
+{% endblock %}

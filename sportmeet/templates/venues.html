@@ -1,0 +1,22 @@
+{% extends 'base.html' %}{% block title %}Площадки · СпортРядом{% endblock %}{% block content %}
+<div class="page-head"><div class="eyebrow">СПРАВОЧНИК МЕСТ</div><h1>Площадки Москвы</h1>
+<p>Найдите место по району или виду спорта. На встречу можно записаться, если на этой площадке есть опубликованное занятие.</p></div>
+<form class="filters" method="get">
+  <label>Название или адрес<input name="q" value="{{ q }}" placeholder="Название или улица"></label>
+  <label>Направление<select name="sport_id"><option value="">Все виды</option>{% for sport in sports %}<option value="{{ sport['id'] }}" {% if sport_id==sport['id'] %}selected{% endif %}>{{ sport['name'] }}</option>{% endfor %}</select></label>
+  <label>Район<select name="area"><option value="">Все районы</option>{% for row in areas %}<option value="{{ row['name'] }}" {% if area==row['name'] %}selected{% endif %}>{{ row['name'] }}</option>{% endfor %}</select></label>
+  <label class="checkline"><input type="checkbox" name="with_events" value="1" {% if with_events %}checked{% endif %}> Только со встречами</label>
+  <button class="button">Показать</button>
+</form>
+<div class="results-head"><p>Найдено площадок: <strong>{{ found }}</strong>. Сначала показаны места с будущими встречами.</p><a class="text-link" href="{{ url_for('venues') }}">Сбросить фильтры</a></div>
+<div class="grid">{% for venue in venues %}
+  <a class="card venue-card" href="{{ url_for('venue_detail',venue_id=venue['id']) }}">
+    <span class="tag">{{ venue['area'] }}</span><h3>{{ venue['name'] }}</h3><p>{{ venue['facility_name'] }}</p>
+    <span class="availability {{ 'available' if venue['upcoming_count'] else '' }}">{{ 'Есть встречи: ' ~ venue['upcoming_count'] if venue['upcoming_count'] else 'Пока нет встреч с записью' }}</span>
+    <p class="venue-card-details"><strong>{{ venue['paid'] }}</strong>{% if venue['paid_comment'] %} · {{ venue['paid_comment'] }}{% endif %}{% if venue['phone'] %}<br>Справочная: {{ venue['phone'] }}{% endif %}{% if venue['website'] %}<br>Сайт: {{ venue['website'] }}{% endif %}</p>
+    <div class="card-bottom"><span>{{ venue['address'] }}</span><span>Подробнее →</span></div>
+  </a>
+{% else %}<div class="empty">Площадок по запросу нет. Снимите фильтр встреч или выберите другой район.</div>{% endfor %}</div>
+<p class="hint">Каталог и контакты взяты из архива 2021 года. Направления определены по названию площадки; уточняйте условия посещения.</p>
+<div class="pages">{% if page>1 %}<a class="button secondary" href="{{ url_for('venues',page=page-1,q=q,area=area,sport_id=sport_id,with_events='1' if with_events else '') }}">← Назад</a>{% endif %}<span>Страница {{ page }}</span>{% if page*24<found %}<a class="button secondary" href="{{ url_for('venues',page=page+1,q=q,area=area,sport_id=sport_id,with_events='1' if with_events else '') }}">Дальше →</a>{% endif %}</div>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends 'base.html' %}{% block title %}Предложить встречу · СпортРядом{% endblock %}
+{% block content %}
+<div class="page-head"><div class="eyebrow">ЕСЛИ НЕТ ПОДХОДЯЩЕЙ ВСТРЕЧИ</div><h1>Предложить занятие рядом</h1><p>Расскажите, какой вид спорта и район интересен. Подтверждённые организаторы увидят предложение и смогут провести встречу. Это предложение не записывает вас на занятие: если встреча появится, заявку нужно будет подать отдельно.</p></div>
+<div class="form-card wide inline-form"><form method="post"><input type="hidden" name="csrf" value="{{ csrf }}">
+<div class="pair"><label>Вид спорта<select name="sport_id" required>{% for sport in sports %}<option value="{{ sport['id'] }}">{{ sport['name'] }}</option>{% endfor %}</select></label>
+<label>Район<select name="area_id" required>{% for area in areas %}<option value="{{ area['id'] }}">{{ area['name'] }}</option>{% endfor %}</select></label></div>
+<label>Что хочется провести? (необязательно)<textarea name="note" maxlength="500" placeholder="Например, дружеская игра по субботам для начинающих"></textarea></label>
+<p class="hint">Не указывайте телефон, адрес проживания и другие личные данные: текст увидят организаторы.</p>
+<button class="button">Опубликовать предложение</button></form></div>
+{% endblock %}
